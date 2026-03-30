@@ -1,6 +1,6 @@
 ---
 name: init-workspace
-description: Clone all repos into main/, set up remotes, do initial Quarkus build
+description: Clone all repos into main/, set up remotes, build all projects into main/.m2
 user_invocable: true
 ---
 
@@ -29,7 +29,11 @@ Initialize the `~/git/hibernate/main/` directory with all repositories and a pre
    git reset --hard upstream/main
    ```
 
-5. Create `main/.m2/` directory.
+5. Seed `main/.m2/` from `~/.m2/repository` via hardlinks:
+   ```
+   mkdir -p ~/git/hibernate/main/.m2
+   rsync -a --link-dest=~/.m2/repository/ ~/.m2/repository/ ~/git/hibernate/main/.m2/
+   ```
 
 6. Set up `.mvn/maven.config` in `main/quarkus/` with:
    ```
@@ -44,4 +48,16 @@ Initialize the `~/git/hibernate/main/` directory with all repositories and a pre
    mvn clean install -DskipTests
    ```
 
-9. Verify the build succeeded and `main/.m2/` contains `io/quarkus/` artifacts.
+9. Build hibernate-orm SNAPSHOTs (Gradle project):
+   ```
+   cd main/hibernate-orm
+   ./gradlew publishToMavenLocal -x test
+   ```
+
+10. Build hibernate-reactive SNAPSHOTs (Gradle project):
+    ```
+    cd main/hibernate-reactive
+    ./gradlew publishToMavenLocal -x test
+    ```
+
+11. Verify the builds succeeded and `main/.m2/` contains `io/quarkus/`, `org/hibernate/orm/`, and `org/hibernate/reactive/` artifacts.

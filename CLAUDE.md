@@ -38,7 +38,7 @@ All repos follow the same remote convention:
 
 - Contains the "real" clones of all repos (not worktrees).
 - Always tracks `upstream/main` — reset hourly via a bash script.
-- `main/` only needs the Quarkus clone for building — hibernate-orm and hibernate-reactive are cloned here as worktree sources for feature branches, but `main/` itself uses released final versions of Hibernate, not SNAPSHOTs.
+- hibernate-orm and hibernate-reactive use Gradle. Their SNAPSHOTs are built via `./gradlew publishToMavenLocal -x test`.
 - Has its own `.m2` directory with pre-built SNAPSHOT artifacts so A/B comparison is always instant.
 - **Refresh script** is a long-running bash script (not a cron job). When executed, it loops: fetches upstream, resets all repos to `upstream/main`, rebuilds Quarkus (`mvn clean install -DskipTests`), then sleeps for 1 hour and repeats. The user decides when to start/stop it.
 - Quarkus build takes ~7 minutes. The `main/.m2` must always be ready for comparison.
