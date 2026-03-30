@@ -51,16 +51,11 @@ build_quarkus() {
     log "Quarkus installed to $M2_DIR"
 }
 
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
 record_snapshot_timestamps() {
     local label="$1"
-    local outfile="$MAIN_DIR/.snapshot-timestamps-${label}"
-    # Record modification times of our SNAPSHOT jars (quarkus + hibernate)
-    find "$M2_DIR" \( -path "*/io/quarkus/*" -o -path "*/org/hibernate/*" \) \
-        -name "*SNAPSHOT*.jar" \
-        ! -name "*-sources.jar" ! -name "*-javadoc.jar" ! -name "*-tests.jar" \
-        -exec stat -f '%Sm|%N' -t '%Y-%m-%d %H:%M:%S' {} \; 2>/dev/null \
-        | sort > "$outfile"
-    log "Recorded $label timestamps ($(wc -l < "$outfile") jars) → $outfile"
+    "$SCRIPT_DIR/print-snapshot-timestamps.sh" "$M2_DIR" "$label"
 }
 
 refresh_cycle() {

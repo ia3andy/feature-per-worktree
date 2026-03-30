@@ -6,9 +6,12 @@ user_invocable: true
 
 # Create Feature
 
-Usage: `/create-feature <number>` (e.g., `/create-feature 3223`)
+Usage: `/create-feature <name> [base-branch]` (e.g., `/create-feature 3223` or `/create-feature 3.33-backport 3.33`)
 
 Creates a feature directory with a Quarkus worktree and an isolated `.m2` seeded from `main/.m2`.
+
+- `<name>`: Feature name (used for directory and branch naming).
+- `[base-branch]`: Optional upstream branch to base the worktree on. Defaults to `upstream/main`. If provided, fetch and use `upstream/<base-branch>` instead.
 
 ## Prerequisites
 
@@ -25,13 +28,18 @@ Creates a feature directory with a Quarkus worktree and an isolated `.m2` seeded
    ```
 
 3. **Create Quarkus worktree** from `main/quarkus`:
+   If a base branch was specified, fetch it first:
    ```
    cd ~/git/hibernate/main/quarkus
-   git worktree add ~/git/hibernate/<number>/quarkus QUARKUS-<number>
+   git fetch upstream <base-branch>
    ```
-   If branch `QUARKUS-<number>` doesn't exist, create it from `upstream/main`:
+   Then create the worktree (use `upstream/main` if no base branch was specified):
    ```
-   git worktree add -b QUARKUS-<number> ~/git/hibernate/<number>/quarkus upstream/main
+   git worktree add ~/git/hibernate/<name>/quarkus QUARKUS-<name>
+   ```
+   If branch `QUARKUS-<name>` doesn't exist, create it from the base:
+   ```
+   git worktree add -b QUARKUS-<name> ~/git/hibernate/<name>/quarkus upstream/<base-branch>
    ```
 
 4. **Seed `.m2`** via hardlinks from `main/.m2`:
@@ -46,6 +54,19 @@ Creates a feature directory with a Quarkus worktree and an isolated `.m2` seeded
    ```
    If `.mvn/maven.config` already exists (from the repo), prepend the line.
 
-6. **Copy Maven safety extension** into `~/git/hibernate/<number>/quarkus/.mvn/` (symlink or copy the extension jar from the orchestration repo).
+6. **Copy Maven safety extension** into `~/git/hibernate/<name>/quarkus/.mvn/` (symlink or copy the extension jar from the orchestration repo).
 
-7. **Confirm**: Print the feature directory contents and remind the user they can open `~/git/hibernate/<number>/quarkus` in IntelliJ IDEA.
+7. **Build Quarkus** into the feature's `.m2`:
+   ```
+   cd ~/git/hibernate/<name>/quarkus
+   ./mvnw -T1C clean install -DskipTests -Dno-format
+   ```
+   (The `-Dmaven.repo.local` is already set via `.mvn/maven.config`.)
+
+8. **Verify SNAPSHOT artifacts were updated** using the shared script:
+   ```
+   ~/git/hibernate/scripts/print-snapshot-timestamps.sh ~/git/hibernate/<name>/.m2 after
+   ```
+   This prints a summary with jar count and timestamps to confirm the build populated the feature's `.m2`.
+
+9. **Confirm**: Print the feature directory contents and remind the user they can open `~/git/hibernate/<name>/quarkus` in IntelliJ IDEA.
