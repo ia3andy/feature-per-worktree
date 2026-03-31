@@ -23,4 +23,4 @@ echo "[$(date '+%H:%M:%S')] Recorded $LABEL timestamps ($COUNT jars) → $OUTFIL
 echo "Sample jars:"
 sort -t'|' -k1,1r "$OUTFILE" | head -5 | while IFS='|' read -r ts path; do
     echo "  $ts  ${path##*/}"
-done
+done || true
