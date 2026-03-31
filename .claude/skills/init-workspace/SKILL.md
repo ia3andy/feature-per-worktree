@@ -1,12 +1,12 @@
 ---
 name: init-workspace
-description: Clone all repos into main/, set up remotes, build all projects into main/.m2
+description: Clone all repos into main/, set up remotes, build all projects into ~/.m2
 user_invocable: true
 ---
 
 # Init Workspace
 
-Initialize the `~/git/hibernate/main/` directory with all repositories and a pre-built `.m2`.
+Initialize the `~/git/hibernate/main/` directory with all repositories. Builds install SNAPSHOTs into `~/.m2/repository`.
 
 ## Steps
 
@@ -29,35 +29,26 @@ Initialize the `~/git/hibernate/main/` directory with all repositories and a pre
    git reset --hard upstream/main
    ```
 
-5. Seed `main/.m2/` from `~/.m2/repository` via hardlinks:
-   ```
-   mkdir -p ~/git/hibernate/main/.m2
-   rsync -a --link-dest=~/.m2/repository/ ~/.m2/repository/ ~/git/hibernate/main/.m2/
-   ```
+5. For each repo, if the local default branch is called `master`, rename it to `main`, set it to track `origin/main`, push it, and update the GitHub fork's default branch to `main`.
 
-6. Set up `.mvn/maven.config` in `main/quarkus/` with:
-   ```
-   -Dmaven.repo.local=$HOME/git/hibernate/main/.m2
-   ```
+6. `main/` repos use `~/.m2/repository` directly — do **not** set `-Dmaven.repo.local` in any `main/` worktree. Do **not** create a `main/.m2/` directory.
 
-7. Set up `.mvn/maven.config` in all other repos in `main/` with the same `.m2` path.
-
-8. Build Quarkus into the local `.m2`:
+7. Build Quarkus into `~/.m2`:
    ```
    cd main/quarkus
    mvn clean install -DskipTests
    ```
 
-9. Build hibernate-orm SNAPSHOTs (Gradle project):
-   ```
-   cd main/hibernate-orm
-   ./gradlew publishToMavenLocal -x test
-   ```
+8. Build hibernate-orm SNAPSHOTs (Gradle project):
+    ```
+    cd main/hibernate-orm
+    ./gradlew publishToMavenLocal -x test
+    ```
 
-10. Build hibernate-reactive SNAPSHOTs (Gradle project):
+9. Build hibernate-reactive SNAPSHOTs (Gradle project):
     ```
     cd main/hibernate-reactive
     ./gradlew publishToMavenLocal -x test
     ```
 
-11. Verify the builds succeeded and `main/.m2/` contains `io/quarkus/`, `org/hibernate/orm/`, and `org/hibernate/reactive/` artifacts.
+10. Verify the builds succeeded and `~/.m2/repository` contains `io/quarkus/`, `org/hibernate/orm/`, and `org/hibernate/reactive/` artifacts.

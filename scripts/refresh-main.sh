@@ -3,7 +3,7 @@ set -euo pipefail
 
 WORKSPACE="$HOME/git/hibernate"
 MAIN_DIR="$WORKSPACE/main"
-M2_DIR="$MAIN_DIR/.m2"
+M2_DIR="$HOME/.m2/repository"
 
 log() { echo "[$(date '+%H:%M:%S')] $*"; }
 fail() { log "ERROR: $1"; exit 1; }
@@ -36,9 +36,8 @@ build_gradle_repo() {
 
     log "Building $repo (publishToMavenLocal)..."
     cd "$dir"
-    ./gradlew publishToMavenLocal -x test --no-daemon \
-        -Dmaven.repo.local="$M2_DIR"
-    log "$repo published to $M2_DIR"
+    ./gradlew publishToMavenLocal -x test --no-daemon
+    log "$repo published to ~/.m2/repository"
 }
 
 build_quarkus() {
@@ -46,16 +45,15 @@ build_quarkus() {
 
     log "Building Quarkus (mvn install -DskipTests)..."
     cd "$dir"
-    ./mvnw -T1C clean install -DskipTests -Dno-format \
-        -Dmaven.repo.local="$M2_DIR"
-    log "Quarkus installed to $M2_DIR"
+    ./mvnw -T1C clean install -DskipTests -Dno-format
+    log "Quarkus installed to ~/.m2/repository"
 }
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 record_snapshot_timestamps() {
     local label="$1"
-    "$SCRIPT_DIR/print-snapshot-timestamps.sh" "$M2_DIR" "$label"
+    "$SCRIPT_DIR/print-snapshot-timestamps.sh" "$M2_DIR" "$label" "$MAIN_DIR"
 }
 
 refresh_cycle() {

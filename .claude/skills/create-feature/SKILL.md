@@ -8,7 +8,7 @@ user_invocable: true
 
 Usage: `/create-feature <name> [base-branch]` (e.g., `/create-feature 3223` or `/create-feature 3.33-backport 3.33`)
 
-Creates a feature directory with a Quarkus worktree and an isolated `.m2` seeded from `main/.m2`.
+Creates a feature directory with a Quarkus worktree and an isolated `.m2` seeded from `~/.m2/repository` via hardlinks.
 
 - `<name>`: Feature name (used for directory and branch naming).
 - `[base-branch]`: Optional upstream branch to base the worktree on. Defaults to `upstream/main`. If provided, fetch and use `upstream/<base-branch>` instead.
@@ -16,11 +16,11 @@ Creates a feature directory with a Quarkus worktree and an isolated `.m2` seeded
 ## Prerequisites
 
 - `main/` must be initialized (run `/init-workspace` first).
-- `main/.m2/` must contain built artifacts.
+- `~/.m2/repository` must contain built artifacts.
 
 ## Steps
 
-1. **Validate**: Check that `main/quarkus` exists and `main/.m2/` has content. Fail with a clear message if not.
+1. **Validate**: Check that `main/quarkus` exists. Fail with a clear message if not.
 
 2. **Create feature directory**:
    ```
@@ -42,15 +42,15 @@ Creates a feature directory with a Quarkus worktree and an isolated `.m2` seeded
    git worktree add -b QUARKUS-<name> ~/git/hibernate/<name>/quarkus upstream/<base-branch>
    ```
 
-4. **Seed `.m2`** via hardlinks from `main/.m2`:
+4. **Seed `.m2`** via hardlinks from `~/.m2/repository`:
    ```
-   rsync -a --link-dest=~/git/hibernate/main/.m2/ ~/git/hibernate/main/.m2/ ~/git/hibernate/<number>/.m2/
+   rsync -a --link-dest=$HOME/.m2/repository/ $HOME/.m2/repository/ ~/git/hibernate/<name>/.m2/
    ```
 
 5. **Set up Maven config** in the worktree:
-   Create `~/git/hibernate/<number>/quarkus/.mvn/maven.config` with:
+   Create or prepend to `~/git/hibernate/<name>/quarkus/.mvn/maven.config`:
    ```
-   -Dmaven.repo.local=$HOME/git/hibernate/<number>/.m2
+   -Dmaven.repo.local=$HOME/git/hibernate/<name>/.m2
    ```
    If `.mvn/maven.config` already exists (from the repo), prepend the line.
 

@@ -13,13 +13,11 @@ This root folder is a **git repository** itself, but contains no source code —
 │   ├── hibernate-orm/
 │   ├── hibernate-reactive/
 │   ├── hibernate-tools/
-│   ├── quarkus-wiki/            # reference only, lives only in main/
-│   └── .m2/                     # pre-built SNAPSHOTs, always fresh
+│   └── quarkus-wiki/            # reference only, lives only in main/
 ├── 3223/                        # feature QUARKUS-3223
 │   ├── quarkus/                 # worktree from main/quarkus, branch QUARKUS-3223
 │   ├── hibernate-orm/           # worktree, added on demand
-│   ├── .m2/                     # seeded from main/.m2 via hardlinks
-│   └── .mvn-settings/           # maven config pointing to this .m2
+│   └── .m2/                     # seeded from ~/.m2 via hardlinks
 ├── 4567/                        # another feature
 │   └── ...
 ```
@@ -41,9 +39,9 @@ All repos follow the same remote convention:
 - Contains the "real" clones of all repos (not worktrees).
 - Always tracks `upstream/main` — reset hourly via a bash script.
 - hibernate-orm and hibernate-reactive use Gradle. Their SNAPSHOTs are built via `./gradlew publishToMavenLocal -x test`.
-- Has its own `.m2` directory with pre-built SNAPSHOT artifacts so A/B comparison is always instant.
+- Uses the global `~/.m2/repository` — no `-Dmaven.repo.local` override needed. `main/` is the source of truth and doesn't need isolation.
 - **Refresh script** is a long-running bash script (not a cron job). When executed, it loops: fetches upstream, resets all repos to `upstream/main`, rebuilds Quarkus (`mvn clean install -DskipTests`), then sleeps for 1 hour and repeats. The user decides when to start/stop it.
-- Quarkus build takes ~7 minutes. The `main/.m2` must always be ready for comparison.
+- Quarkus build takes ~7 minutes. `~/.m2` must always be ready for comparison.
 
 ## Feature directories (e.g. `3223/`)
 
@@ -51,7 +49,7 @@ All repos follow the same remote convention:
 - Created on demand with a skill.
 - Always contains a Quarkus worktree (all features involve Quarkus so far).
 - Other repos (hibernate-orm, hibernate-reactive) are added on demand via a separate skill.
-- Each feature has its own `.m2` directory, seeded from `main/.m2` using `rsync --link-dest` (hardlinks).
+- Each feature has its own `.m2` directory, seeded from `~/.m2/repository` using `rsync --link-dest` (hardlinks).
   - This is instant and uses near-zero extra disk space.
   - Only rebuilt SNAPSHOT artifacts (io/quarkus/*, org/hibernate/*) diverge and use real space.
   - Maven config (`.mvn/maven.config`) in each worktree points to the feature's `.m2` via `-Dmaven.repo.local`.
@@ -69,22 +67,18 @@ When in doubt about how something worked before a change:
 2. Open `3223/quarkus` in IDEA — it has the feature branch with its own SNAPSHOTs.
 3. Both are independently buildable and testable without interfering with each other.
 
-## Maven Safety: Prevent Use of ~/.m2
+## Maven Isolation: Feature builds must not pollute ~/.m2
 
-Every worktree (both `main/` and feature dirs) must be configured so Maven **never** reads from or writes to the global `~/.m2`. Options to enforce this:
+Feature worktrees must be configured so Maven **never** reads from or writes to the global `~/.m2`. This is enforced via `-Dmaven.repo.local=<feature>/.m2` in each worktree's `.mvn/maven.config`. The feature `.m2` is seeded from `~/.m2/repository` via hardlinks so all artifacts are available locally.
 
-1. **`.mvn/maven.config`** in every worktree with `-Dmaven.repo.local=<absolute-path-to-feature/.m2>` — this is the primary mechanism.
-2. **Maven extension** (`.mvn/extensions.xml` + a small jar built in this orchestration repo) that runs at build start and verifies `maven.repo.local` points to a path inside `~/git/hibernate/`. If it doesn't (i.e., Maven would use `~/.m2`), the build fails immediately with a clear error. Since the extension lives in `.mvn/` inside each worktree, it only affects projects within this workspace — no impact on any other Maven project on the machine. It also catches builds triggered by IntelliJ IDEA, not just CLI.
-3. The extension jar is built and versioned in this orchestration repo, then symlinked or copied into each worktree's `.mvn/` during feature creation.
-
-This is critical: if Maven silently falls back to `~/.m2`, the entire isolation model breaks and A/B comparison becomes unreliable.
+`main/` repos use `~/.m2` directly (no override) since they are the source of truth.
 
 ## Skills Needed
 
-1. **init-workspace** — Clone all repos into `main/`, set up remotes (origin + upstream), do initial Quarkus build into `main/.m2`.
-2. **create-feature** — e.g., "create feature 3223" → creates `3223/` dir, Quarkus worktree on branch `QUARKUS-3223`, seeds `.m2` from `main/.m2` via hardlinks, sets up `.mvn/maven.config`.
+1. **init-workspace** — Clone all repos into `main/`, set up remotes (origin + upstream), do initial Quarkus build into `~/.m2`.
+2. **create-feature** — e.g., "create feature 3223" → creates `3223/` dir, Quarkus worktree on branch `QUARKUS-3223`, seeds `.m2` from `~/.m2/repository` via hardlinks, sets up `.mvn/maven.config`.
 3. **add-repo-to-feature** — e.g., "add hibernate-orm to 3223" → creates worktree in `3223/hibernate-orm/` from `main/hibernate-orm`.
-4. **refresh-main** — Bash script for hourly cron: fetches upstream, resets all repos to upstream/main, rebuilds Quarkus into `main/.m2`.
+4. **refresh-main** — Bash script for hourly loop: fetches upstream, resets all repos to upstream/main, rebuilds Quarkus into `~/.m2`.
 5. **delete-feature** — Cleans up worktrees (via `git worktree remove`) and deletes the feature directory + its `.m2`.
 
 ## Shell Aliases
