@@ -24,7 +24,7 @@ Creates a feature directory with a Quarkus worktree and an isolated `.m2` seeded
 
 2. **Create feature directory**:
    ```
-   mkdir -p ~/git/hibernate/<number>
+   mkdir -p ~/git/hibernate/<number>/journal
    ```
 
 3. **Create Quarkus worktree** from `main/quarkus`:
