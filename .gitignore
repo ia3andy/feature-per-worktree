@@ -2,3 +2,4 @@ main/
 [0-9]*/
 .m2/
 .idea/
+.DS_Store
