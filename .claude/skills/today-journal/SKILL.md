@@ -16,11 +16,13 @@ Produces a two-line summary of today's work across all features.
    date "+%Y-%m-%d"
    ```
 
-2. Scan all feature directories under `~/git/hibernate/` for today's journal. Check every directory that has a `journal/` subfolder:
+2. Scan for today's journal entries in two places:
+   - **Active features**: check `~/git/hibernate/*/journal/YYYY-MM-DD.md`
+   - **Archived journals**: check `~/git/hibernate/journal/*/events/YYYY-MM-DD.md`
    ```bash
-   find ~/git/hibernate -maxdepth 2 -type d -name journal
+   find ~/git/hibernate -maxdepth 2 -path '*/journal/*.md' -name "$(date +%Y-%m-%d).md"
+   find ~/git/hibernate/journal -maxdepth 3 -path '*/events/*.md' -name "$(date +%Y-%m-%d).md"
    ```
-   Then check each for a `YYYY-MM-DD.md` file matching today's date.
 
 3. Read all matching journal files. If none exist, say so and stop.
 
