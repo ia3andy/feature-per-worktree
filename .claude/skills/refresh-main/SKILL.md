@@ -1,45 +1,46 @@
 ---
 name: refresh-main
-description: Long-running script that resets main/ to upstream and rebuilds Quarkus hourly
+description: Long-running script that resets main/ to upstream and rebuilds configured repos
 user_invocable: true
 ---
 
 # Refresh Main
 
-Usage: `/refresh-main`
+Usage: /refresh-main
 
-Creates and runs a long-running bash script that keeps `main/` in sync with upstream. The script loops forever: fetch, reset, build, sleep 1 hour.
+Runs the refresh-main.sh script that keeps main/ in sync with upstream. The script loops forever: fetch, reset, build, sleep 1 hour.
 
 ## What the script does (each iteration)
 
-1. **Fetch and reset all repos**:
+1. Read workspace.yml for repo list and build flags.
+
+2. Fetch and reset all repos to upstream/main:
    ```bash
-   for repo in quarkus hibernate-orm hibernate-reactive; do
-     cd ~/git/hibernate/main/$repo
+   for each repo in workspace.yml:
+     cd <workspace-root>/main/<repo>
      git fetch upstream
      git reset --hard upstream/main
-   done
    ```
 
-2. **Build Quarkus** (only Quarkus, not the other repos):
+3. Build SNAPSHOTs for repos with build_on_refresh: true:
    ```bash
-   cd ~/git/hibernate/main/quarkus
-   ~/git/hibernate/scripts/build-fast.sh
+   cd <workspace-root>/main/<repo>
+   <workspace-root>/scripts/build-fast.sh
    ```
 
-3. **Log** the timestamp and build result.
+4. Log the timestamp and build result.
 
-4. **Sleep 1 hour**, then repeat.
+5. Sleep 1 hour, then repeat.
 
 ## Script location
 
-Write the script to `~/git/hibernate/scripts/refresh-main.sh` and make it executable.
+The script is at <workspace-root>/scripts/refresh-main.sh.
 
 ## Running
 
 Run the script in the background or in a dedicated terminal tab:
 ```bash
-~/git/hibernate/scripts/refresh-main.sh
+<workspace-root>/scripts/refresh-main.sh
 ```
 
-The user can stop it with Ctrl+C at any time. The script should handle SIGINT gracefully (print a message and exit cleanly).
+The user can stop it with Ctrl+C at any time. The script handles SIGINT gracefully.

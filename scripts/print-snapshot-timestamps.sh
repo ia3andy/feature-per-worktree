@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Usage: print-snapshot-timestamps.sh <m2-dir> [label] [output-dir]
-# Finds SNAPSHOT jars (io/quarkus/*, org/hibernate/*) in the given .m2 directory,
+# Finds all SNAPSHOT jars in the given .m2 directory,
 # prints their modification timestamps, and writes them to a file for diffing.
 
 M2_DIR="${1:?Usage: print-snapshot-timestamps.sh <m2-dir> [label] [output-dir]}"
@@ -10,7 +10,7 @@ LABEL="${2:-snapshot}"
 OUT_DIR="${3:-${M2_DIR}/..}"
 OUTFILE="${OUT_DIR}/.snapshot-timestamps-${LABEL}"
 
-find "$M2_DIR" \( -path "*/io/quarkus/*" -o -path "*/org/hibernate/*" \) \
+find "$M2_DIR" \
     -name "*SNAPSHOT*.jar" \
     ! -name "*-sources.jar" ! -name "*-javadoc.jar" ! -name "*-tests.jar" \
     -exec stat -f '%Sm|%N' -t '%Y-%m-%d %H:%M:%S' {} \; 2>/dev/null \

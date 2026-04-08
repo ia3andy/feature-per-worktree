@@ -6,7 +6,7 @@ user_invocable: true
 
 # Write Journal
 
-Usage: `/write-journal [extra context]` (e.g., `/write-journal we decided to drop the reactive approach`)
+Usage: /write-journal [extra context] (e.g., /write-journal we decided to drop the reactive approach)
 
 Appends a journal entry for the current feature, capturing what was done in the session.
 
@@ -14,9 +14,10 @@ Appends a journal entry for the current feature, capturing what was done in the 
 
 Auto-detect which feature is active:
 
-1. Check the current working directory for a feature path (e.g., `~/git/hibernate/3223/...`)
-2. Check conversation context for recent commands or file reads in a feature directory
-3. If ambiguous or no feature context is found, ask the user which feature to journal
+1. Determine the workspace root (the directory containing workspace.yml and CLAUDE.md).
+2. Check the current working directory for a feature path within the workspace root.
+3. Check conversation context for recent commands or file reads in a feature directory.
+4. If ambiguous or no feature context is found, ask the user which feature to journal.
 
 ## Writing the Entry
 
@@ -28,7 +29,7 @@ Auto-detect which feature is active:
 2. **Gather git commits** on the feature branch(es) since the last journal entry (or all commits if no prior entry exists). Parse the first `## YYYY-MM-DD HH:MM` heading from the existing day file to determine the cutoff:
    ```bash
    # For each repo in the feature directory:
-   cd ~/git/hibernate/<feature>/<repo>
+   cd <workspace-root>/<feature>/<repo>
    git log --oneline --since="<last entry timestamp or start of day>" HEAD
    ```
 
@@ -37,7 +38,7 @@ Auto-detect which feature is active:
    - Git commits as milestones (short hash, commit message)
    - User-provided extra text (from the argument)
 
-4. **Write to file** at `~/git/hibernate/<feature>/journal/YYYY-MM-DD.md`:
+4. **Write to file** at `<workspace-root>/<feature>/journal/YYYY-MM-DD.md`:
    - If the file exists, prepend the new entry at the top (newest first), separated by a blank line from the existing content
    - If the file does not exist, create it
 
@@ -48,7 +49,7 @@ Each entry starts with a heading using the datetime, followed by bullet points. 
 ```
 ## 2026-04-01 16:45
 
-- Found the root cause of the flaky ORM batch insert test. H2 uses READ_COMMITTED by default but the test assumed REPEATABLE_READ. Fixed by explicitly setting the isolation level in the test configuration.
+- Found the root cause of the flaky batch insert test. H2 uses READ_COMMITTED by default but the test assumed REPEATABLE_READ. Fixed by explicitly setting the isolation level in the test configuration.
 - commit: def5678 - Fix flaky batch insert test isolation level
 ```
 

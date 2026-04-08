@@ -1,76 +1,67 @@
 ---
 name: create-feature
-description: Create a new feature directory with Quarkus worktree and isolated .m2
+description: Create a new feature directory with worktrees and isolated .m2
 user_invocable: true
 ---
 
 # Create Feature
 
-Usage: `/create-feature <name> [base-branch]` (e.g., `/create-feature 3223` or `/create-feature 3.33-backport 3.33`)
+Usage: /create-feature <name> (e.g., /create-feature fix-frontmatter)
 
-Creates a feature directory with a Quarkus worktree and an isolated `.m2` seeded from `~/.m2/repository` via hardlinks.
+Creates a feature directory with git worktrees and an isolated .m2 using Maven's tail local repository.
 
-- `<name>`: Feature name (used for directory and branch naming).
-- `[base-branch]`: Optional upstream branch to base the worktree on. Defaults to `upstream/main`. If provided, fetch and use `upstream/<base-branch>` instead.
+- <name>: Feature name (used for directory and branch naming).
 
 ## Prerequisites
 
-- `main/` must be initialized (run `/init-workspace` first).
-- `~/.m2/repository` must contain built artifacts.
+- main/ must be initialized (run /init-workspace first).
+- ~/.m2/repository must contain built artifacts.
 
 ## Steps
 
-1. **Validate**: Check that `main/quarkus` exists. Fail with a clear message if not.
+1. Read workspace.yml to get the repo list.
 
-2. **Create feature directory**:
-   ```
-   mkdir -p ~/git/hibernate/<number>/journal
-   ```
+2. Validate: Check that main/ exists and contains at least one repo. Fail with a clear message if not.
 
-3. **Create Quarkus worktree** from `main/quarkus`:
-   If a base branch was specified, fetch it first:
+3. Ask the user which repos to include as worktrees. List all repos from workspace.yml and let them pick. At least one repo must be selected.
+
+4. Create feature directory:
    ```
-   cd ~/git/hibernate/main/quarkus
-   git fetch upstream <base-branch>
-   ```
-   Then create the worktree (use `upstream/main` if no base branch was specified):
-   ```
-   git worktree add ~/git/hibernate/<name>/quarkus QUARKUS-<name>
-   ```
-   If branch `QUARKUS-<name>` doesn't exist, create it from the base:
-   ```
-   git worktree add -b QUARKUS-<name> ~/git/hibernate/<name>/quarkus upstream/<base-branch>
+   mkdir -p <workspace-root>/<name>/journal
    ```
 
-4. **Seed `.m2`** via hardlinks from `~/.m2/repository`:
+5. Create the feature .m2 directory:
    ```
-   rsync -a --link-dest=$HOME/.m2/repository/ $HOME/.m2/repository/ ~/git/hibernate/<name>/.m2/
+   mkdir -p <workspace-root>/<name>/.m2
    ```
 
-5. **Set up Maven config** in the worktree:
-   Create or prepend to `~/git/hibernate/<name>/quarkus/.mvn/maven.config`:
+6. For each selected repo, create a worktree from main/<repo>:
    ```
-   -Dmaven.repo.local=$HOME/git/hibernate/<name>/.m2
+   cd <workspace-root>/main/<repo>
+   git fetch upstream
+   git worktree add -b <name> <workspace-root>/<name>/<repo> upstream/main
    ```
-   If `.mvn/maven.config` already exists (from the repo), prepend the line.
+   If branch <name> already exists:
+   ```
+   git worktree add <workspace-root>/<name>/<repo> <name>
+   ```
 
-6. **Copy Maven safety extension** into `~/git/hibernate/<name>/quarkus/.mvn/` (symlink or copy the extension jar from the orchestration repo).
-
-7. **Build Quarkus** into the feature's `.m2`:
+7. For each worktree, set up Maven config. Create or prepend to <workspace-root>/<name>/<repo>/.mvn/maven.config:
    ```
-   cd ~/git/hibernate/<name>/quarkus
-   ~/git/hibernate/scripts/build-fast.sh
+   -Dmaven.repo.local=<absolute-path-to-feature>/.m2
+   -Daether.enhancedLocalRepository.localPath.tail=$HOME/.m2/repository
    ```
-   (The `-Dmaven.repo.local` is already set via `.mvn/maven.config`.)
+   If .mvn/maven.config already exists (from the repo), prepend these lines.
 
-8. **Verify SNAPSHOT artifacts were updated** using the shared script:
+8. For each selected repo, ask whether to build its SNAPSHOTs into the feature .m2:
+   - Repos with build_on_init: true in workspace.yml: suggest yes by default.
+   - Repos with build_on_init: false: suggest no by default (the user is adding them for source-level changes, but may not need to build yet).
    ```
-   ~/git/hibernate/scripts/print-snapshot-timestamps.sh ~/git/hibernate/<name>/.m2 after
+   cd <workspace-root>/<name>/<repo>
+   <workspace-root>/scripts/build-fast.sh
    ```
-   This prints a summary with jar count and timestamps to confirm the build populated the feature's `.m2`.
 
-9. **Confirm**: Print the feature directory contents and remind the user to configure IntelliJ IDEA before opening `~/git/hibernate/<name>/quarkus`:
+9. Confirm: Print the feature directory contents and remind the user to configure IntelliJ IDEA before opening any repo:
 
-   **IntelliJ setup (required):**
-   - **Local repository override**: Settings → Build → Build Tools → Maven → check "Override" on "Local repository" and set it to `~/git/hibernate/<name>/.m2`. IntelliJ does not respect `-Dmaven.repo.local` from `.mvn/maven.config` for plugin resolution during import.
-   - **Disable `--release` flag**: Settings → Build → Compiler → Java Compiler → uncheck "Use '--release' option for cross-compilation (Java 9 and later)". Without this, Quarkus fails to compile because `--release` conflicts with `--add-exports` for internal JDK APIs.
+   IntelliJ setup (required):
+   - Local repository override: Settings > Build > Build Tools > Maven > check "Override" on "Local repository" and set it to <workspace-root>/<name>/.m2. IntelliJ does not respect -Dmaven.repo.local from .mvn/maven.config for plugin resolution during import.

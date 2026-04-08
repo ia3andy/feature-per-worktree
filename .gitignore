@@ -1,5 +1,16 @@
-main/
-[0-9]*/
-.m2/
-.idea/
-.DS_Store
+# Ignore everything
+*
+
+# Allow orchestration files
+!CLAUDE.md
+!README.md
+!workspace.yml
+!.gitignore
+!scripts/
+!scripts/**
+!journal/
+!journal/**
+!docs/
+!docs/**
+!.claude/
+!.claude/**

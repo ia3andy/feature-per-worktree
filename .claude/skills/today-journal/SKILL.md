@@ -5,23 +5,23 @@ description: Use when the user wants a quick two-line summary of today's work fr
 
 # Today Journal
 
-Usage: `/today-journal`
+Usage: /today-journal
 
 Produces a two-line summary of today's work across all features.
 
 ## Steps
 
-1. Determine today's date:
+1. Determine today's date and the workspace root (the directory containing workspace.yml):
    ```bash
    date "+%Y-%m-%d"
    ```
 
 2. Scan for today's journal entries in two places:
-   - **Active features**: check `~/git/hibernate/*/journal/YYYY-MM-DD.md`
-   - **Archived journals**: check `~/git/hibernate/journal/*/events/YYYY-MM-DD.md`
+   - **Active features**: check `<workspace-root>/*/journal/YYYY-MM-DD.md`
+   - **Archived journals**: check `<workspace-root>/journal/*/events/YYYY-MM-DD.md`
    ```bash
-   find ~/git/hibernate -maxdepth 2 -path '*/journal/*.md' -name "$(date +%Y-%m-%d).md"
-   find ~/git/hibernate/journal -maxdepth 3 -path '*/events/*.md' -name "$(date +%Y-%m-%d).md"
+   find <workspace-root> -maxdepth 2 -path '*/journal/*.md' -name "$(date +%Y-%m-%d).md"
+   find <workspace-root>/journal -maxdepth 3 -path '*/events/*.md' -name "$(date +%Y-%m-%d).md"
    ```
 
 3. Read all matching journal files. If none exist, say so and stop.

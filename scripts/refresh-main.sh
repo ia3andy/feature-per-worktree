@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-WORKSPACE="$HOME/git/hibernate"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+WORKSPACE="$(cd "$SCRIPT_DIR/.." && pwd)"
+WORKSPACE_YML="$WORKSPACE/workspace.yml"
 MAIN_DIR="$WORKSPACE/main"
 M2_DIR="$HOME/.m2/repository"
 
@@ -12,7 +14,12 @@ trap 'echo ""; log "Interrupted (Ctrl+C). Exiting."; exit 130' INT
 trap 'log "Terminated (SIGHUP/Ctrl+D or terminal closed). Exiting."; exit 143' HUP
 
 # Verify workspace exists
+[[ -f "$WORKSPACE_YML" ]] || fail "workspace.yml not found at $WORKSPACE_YML"
 [[ -d "$MAIN_DIR" ]] || fail "main/ directory not found at $MAIN_DIR"
+
+# Read config
+ALL_REPOS=$(yq '.repos | keys | .[]' "$WORKSPACE_YML")
+BUILD_REPOS=$(yq '.repos | to_entries | .[] | select(.value.build_on_refresh == true) | .key' "$WORKSPACE_YML")
 
 reset_repo() {
     local repo="$1"
@@ -28,28 +35,17 @@ reset_repo() {
     log "$repo reset to $(git rev-parse --short HEAD)"
 }
 
-build_gradle_repo() {
+build_repo() {
     local repo="$1"
     local dir="$MAIN_DIR/$repo"
 
     [[ -d "$dir" ]] || { log "SKIP $repo — not cloned"; return 0; }
 
-    log "Building $repo (publishToMavenLocal)..."
-    cd "$dir"
-    ./gradlew publishToMavenLocal -x test --no-daemon
-    log "$repo published to ~/.m2/repository"
-}
-
-build_quarkus() {
-    local dir="$MAIN_DIR/quarkus"
-
-    log "Building Quarkus (build-fast)..."
+    log "Building $repo (build-fast)..."
     cd "$dir"
     "$SCRIPT_DIR/build-fast.sh"
-    log "Quarkus installed to ~/.m2/repository"
+    log "$repo installed to ~/.m2/repository"
 }
-
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 record_snapshot_timestamps() {
     local label="$1"
@@ -64,16 +60,14 @@ refresh_cycle() {
     record_snapshot_timestamps "before"
 
     # 1. Reset all repos to upstream/main
-    reset_repo quarkus
-    reset_repo hibernate-orm
-    reset_repo hibernate-reactive
+    for repo in $ALL_REPOS; do
+        reset_repo "$repo"
+    done
 
-    # 2. Build Hibernate ORM and Reactive (Gradle → publishToMavenLocal)
-    build_gradle_repo hibernate-orm
-    build_gradle_repo hibernate-reactive
-
-    # 3. Build Quarkus (Maven → install)
-    build_quarkus
+    # 2. Build repos with build_on_refresh: true
+    for repo in $BUILD_REPOS; do
+        build_repo "$repo"
+    done
 
     # Record post-build timestamps
     record_snapshot_timestamps "after"
