@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git fetch:*)",
+      "Bash(git worktree:*)",
+      "Bash(*/scripts/build-fast.sh:*)",
+      "Bash(mvn:*)",
+      "Bash(mvnd:*)",
+      "Bash(mkdir:*)",
+      "Write(~/workspace/roq-features/*)"
+    ]
+  }
+}

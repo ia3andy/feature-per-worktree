@@ -64,7 +64,8 @@ main/ repos use ~/.m2/repository directly (no override).
 
 - Each repo in a feature is opened as a separate IntelliJ project (no multi-module).
 - Both main/ and feature dirs must be openable in IDEA and able to run tests directly.
-- IntelliJ local repository override: Settings > Build > Build Tools > Maven > check "Override" on "Local repository" and set it to <feature>/.m2. IntelliJ does not respect -Dmaven.repo.local from .mvn/maven.config for plugin resolution during import.
+- IntelliJ local repository override: the create-feature skill sets this automatically via `.idea/workspace.xml` using the `MavenImportPreferences` component. IntelliJ does not respect `-Dmaven.repo.local` from `.mvn/maven.config` for plugin resolution during import, so the XML override is required.
+- The tail local repository setting may not be used by IntelliJ during import. This is acceptable because the feature `.m2` contains all built SNAPSHOTs, and released dependencies are downloaded from Maven Central.
 
 ## A/B Comparison Workflow
 
@@ -94,6 +95,14 @@ alias format="<workspace-root>/scripts/format.sh"
 - build-fast: full build skipping tests, docs, and non-essential steps
 - build-docs: build with docs but skip tests
 - format: run source formatting only
+
+## PRs and Issues
+
+When creating pull requests or issues, keep descriptions concise and informative:
+- Summarize what changed and why in a few bullet points.
+- Do not add a "Validation" or "Test plan" section.
+- No boilerplate, checklists, or filler text.
+- Do not add "Generated with Claude Code" or similar attribution lines.
 
 ## Git Structure of This Repo
 

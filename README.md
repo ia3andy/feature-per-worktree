@@ -53,6 +53,7 @@ repos:
   - upstream: org/repo on GitHub (upstream remote).
   - build_on_init: Build SNAPSHOTs during /init-workspace. Default false.
   - build_on_refresh: Rebuild SNAPSHOTs during /refresh-main. Default false.
+  - default: Include in new features by default (when no repos specified). Default false.
 
 ## Prerequisites
 
@@ -87,6 +88,7 @@ repos:
     upstream: quarkiverse/quarkus-roq
     build_on_init: true
     build_on_refresh: true
+    default: true
   quarkus-web-bundler:
     upstream: quarkiverse/quarkus-web-bundler
     build_on_init: false
